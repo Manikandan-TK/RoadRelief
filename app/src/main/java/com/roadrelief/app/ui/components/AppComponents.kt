@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -66,8 +67,9 @@ fun RoadReliefButton(
     Button(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006A60))
     ) {
-        Text(text = text, fontSize = 16.sp)
+        Text(text = text, fontSize = 16.sp, color = Color.White)
     }
 }
 

@@ -10,6 +10,7 @@ data class CaseEntity(
     val incidentDate: Long,
     val authority: String,
     val description: String,
+    val vehicleDamageDescription: String,
     val compensation: Double,
     val status: String
 )

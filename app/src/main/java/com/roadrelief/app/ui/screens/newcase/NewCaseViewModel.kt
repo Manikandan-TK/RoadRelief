@@ -25,8 +25,11 @@ class NewCaseViewModel @Inject constructor(
     private val _authority = MutableStateFlow("")
     val authority: StateFlow<String> = _authority.asStateFlow()
 
-    private val _description = MutableStateFlow("")
-    val description: StateFlow<String> = _description.asStateFlow()
+    private val _roadConditionDescription = MutableStateFlow("")
+    val roadConditionDescription: StateFlow<String> = _roadConditionDescription.asStateFlow()
+
+    private val _vehicleDamageDescription = MutableStateFlow("")
+    val vehicleDamageDescription: StateFlow<String> = _vehicleDamageDescription.asStateFlow()
 
     private val _compensation = MutableStateFlow("")
     val compensation: StateFlow<String> = _compensation.asStateFlow()
@@ -37,6 +40,8 @@ class NewCaseViewModel @Inject constructor(
     private val _evidenceList = MutableStateFlow<List<EvidenceEntity>>(emptyList())
     val evidenceList: StateFlow<List<EvidenceEntity>> = _evidenceList.asStateFlow()
 
+    val authorities = listOf("City Council", "State Highway Dept", "Other")
+
     fun onIncidentDateChange(date: Long) {
         _incidentDate.value = date
     }
@@ -45,8 +50,12 @@ class NewCaseViewModel @Inject constructor(
         _authority.value = auth
     }
 
-    fun onDescriptionChange(desc: String) {
-        _description.value = desc
+    fun onRoadConditionDescriptionChange(desc: String) {
+        _roadConditionDescription.value = desc
+    }
+
+    fun onVehicleDamageDescriptionChange(desc: String) {
+        _vehicleDamageDescription.value = desc
     }
 
     fun onCompensationChange(comp: String) {
@@ -70,7 +79,8 @@ class NewCaseViewModel @Inject constructor(
             val case = CaseEntity(
                 incidentDate = _incidentDate.value,
                 authority = _authority.value,
-                description = _description.value,
+                description = _roadConditionDescription.value,
+                vehicleDamageDescription = _vehicleDamageDescription.value,
                 compensation = _compensation.value.toDoubleOrNull() ?: 0.0,
                 status = _status.value
             )
@@ -82,7 +92,8 @@ class NewCaseViewModel @Inject constructor(
             // Clear form after saving
             _incidentDate.value = System.currentTimeMillis()
             _authority.value = ""
-            _description.value = ""
+            _roadConditionDescription.value = ""
+            _vehicleDamageDescription.value = ""
             _compensation.value = ""
             _evidenceList.value = emptyList()
         }

@@ -26,7 +26,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "road_relief_db"
-        ).build()
+        ).addMigrations(AppDatabase.MIGRATION_1_2).build()
     }
 
     @Provides
