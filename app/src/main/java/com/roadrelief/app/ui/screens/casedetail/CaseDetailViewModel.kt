@@ -1,5 +1,9 @@
 package com.roadrelief.app.ui.screens.casedetail
 
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import androidx.core.net.toFile
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,9 +13,11 @@ import com.roadrelief.app.data.database.entity.CaseEntity
 import com.roadrelief.app.data.database.entity.EvidenceEntity
 import com.roadrelief.app.util.PdfGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -19,6 +25,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CaseDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val caseDao: CaseDao,
     private val evidenceDao: EvidenceDao,
@@ -33,6 +40,9 @@ class CaseDetailViewModel @Inject constructor(
     val caseWithEvidence: StateFlow<Pair<CaseEntity?, List<EvidenceEntity>>?> = combine(_case, _evidence) { case, evidence ->
         case?.let { Pair(it, evidence) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _shareIntent = MutableStateFlow<Intent?>(null)
+    val shareIntent: StateFlow<Intent?> = _shareIntent.asStateFlow()
 
     init {
         if (caseId != -1L) {
@@ -53,8 +63,23 @@ class CaseDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _case.value?.let { case ->
                 val pdfUri = pdfGenerator.generatePdfReport(case, _evidence.value)
-                // TODO: Handle the generated PDF URI (e.g., show a success message, share it)
+                pdfUri?.let { uri ->
+                    val authority = "${context.packageName}.provider"
+                    val contentUri = FileProvider.getUriForFile(context, authority, uri.toFile())
+
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, contentUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooserIntent = Intent.createChooser(shareIntent, "Share PDF Report")
+                    _shareIntent.value = chooserIntent
+                }
             }
         }
+    }
+
+    fun onShareIntentHandled() {
+        _shareIntent.value = null
     }
 }

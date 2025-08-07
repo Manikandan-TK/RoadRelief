@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.roadrelief.app.ui.components.RoadReliefButton
 
 @Composable
 fun SubmissionGuideScreen() {
@@ -41,14 +41,13 @@ fun SubmissionGuideScreen() {
         Text(text = "4. Keep a record of your complaint number for future reference.")
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
+        RoadReliefButton(
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://edaakhil.nic.in/"))
                 context.startActivity(intent)
             },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Go to E-Daakhil Portal")
-        }
+            modifier = Modifier.fillMaxWidth(),
+            text = "Go to E-Daakhil Portal"
+        )
     }
 }

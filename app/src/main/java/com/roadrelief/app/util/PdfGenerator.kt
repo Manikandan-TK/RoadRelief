@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import android.os.Environment
 import com.roadrelief.app.data.database.entity.CaseEntity
 import com.roadrelief.app.data.database.entity.EvidenceEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -91,8 +90,8 @@ class PdfGenerator @Inject constructor(
 
         document.finishPage(page)
 
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val roadReliefDir = File(downloadsDir, "RoadRelief")
+        val cacheDir = context.cacheDir
+        val roadReliefDir = File(cacheDir, "RoadRelief")
         if (!roadReliefDir.exists()) {
             roadReliefDir.mkdirs()
         }

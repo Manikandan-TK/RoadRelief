@@ -1,7 +1,5 @@
 package com.roadrelief.app.ui.screens.newcase
 
-import android.net.Uri
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roadrelief.app.data.database.dao.CaseDao
@@ -19,7 +17,6 @@ import javax.inject.Inject
 class NewCaseViewModel @Inject constructor(
     private val caseDao: CaseDao,
     private val evidenceDao: EvidenceDao,
-    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _incidentDate = MutableStateFlow(System.currentTimeMillis())
@@ -40,26 +37,6 @@ class NewCaseViewModel @Inject constructor(
     private val _evidenceList = MutableStateFlow<List<EvidenceEntity>>(emptyList())
     val evidenceList: StateFlow<List<EvidenceEntity>> = _evidenceList.asStateFlow()
 
-    init {
-        savedStateHandle.get<String>("photoUri")?.let { uriString ->
-            val latitude = savedStateHandle.get<Double>("latitude") ?: 0.0
-            val longitude = savedStateHandle.get<Double>("longitude") ?: 0.0
-            val timestamp = System.currentTimeMillis()
-            val newEvidence = EvidenceEntity(
-                caseId = 0, // Will be updated after case is saved
-                photoUri = uriString,
-                latitude = latitude,
-                longitude = longitude,
-                timestamp = timestamp
-            )
-            _evidenceList.value = _evidenceList.value + newEvidence
-            // Clear savedStateHandle to avoid re-adding on recomposition
-            savedStateHandle.remove<String>("photoUri")
-            savedStateHandle.remove<Double>("latitude")
-            savedStateHandle.remove<Double>("longitude")
-        }
-    }
-
     fun onIncidentDateChange(date: Long) {
         _incidentDate.value = date
     }
@@ -74,6 +51,18 @@ class NewCaseViewModel @Inject constructor(
 
     fun onCompensationChange(comp: String) {
         _compensation.value = comp
+    }
+
+    fun addEvidence(uriString: String, latitude: Double, longitude: Double) {
+        val timestamp = System.currentTimeMillis()
+        val newEvidence = EvidenceEntity(
+            caseId = 0, // Will be updated after case is saved
+            photoUri = uriString,
+            latitude = latitude,
+            longitude = longitude,
+            timestamp = timestamp
+        )
+        _evidenceList.value = _evidenceList.value + newEvidence
     }
 
     fun saveCase() {

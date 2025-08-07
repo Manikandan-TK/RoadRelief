@@ -4,17 +4,20 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.roadrelief.app.ui.components.RoadReliefButton
 import com.roadrelief.app.ui.nav.Screen
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -38,10 +42,28 @@ fun NewCaseScreen(
     val compensation by viewModel.compensation.collectAsState()
     val evidenceList by viewModel.evidenceList.collectAsState()
 
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.let { handle ->
+            val photoUri = handle.get<String>("photoUri")
+            val latitude = handle.get<Double>("latitude")
+            val longitude = handle.get<Double>("longitude")
+
+            if (photoUri != null && latitude != null && longitude != null) {
+                viewModel.addEvidence(photoUri, latitude, longitude)
+                // Clear the saved state handle to avoid re-triggering
+                handle.remove<String>("photoUri")
+                handle.remove<Double>("latitude")
+                handle.remove<Double>("longitude")
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .windowInsetsPadding(WindowInsets.statusBars) // Apply status bar insets first
+            .padding(16.dp) // Then apply uniform content padding
     ) {
         OutlinedTextField(
             value = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(incidentDate)),
@@ -73,12 +95,12 @@ fun NewCaseScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
+        RoadReliefButton(
             onClick = { navController.navigate(Screen.Camera.route) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Add Evidence")
-        }
+            modifier = Modifier.fillMaxWidth(),
+            text = "Add Evidence"
+        )
+        // Increased spacer for better separation
         Spacer(modifier = Modifier.height(16.dp))
 
         if (evidenceList.isNotEmpty()) {
@@ -95,17 +117,16 @@ fun NewCaseScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp)) // Spacer after evidence, before Save
         }
 
-        Button(
+        RoadReliefButton(
             onClick = {
                 viewModel.saveCase()
                 navController.popBackStack()
             },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Save Case")
-        }
+            modifier = Modifier.fillMaxWidth(),
+            text = "Save Case"
+        )
     }
 }

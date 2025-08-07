@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.net.Uri
+import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.view.LifecycleCameraController
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -22,16 +24,17 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.Executor
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import androidx.camera.core.ImageCapture
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+
+    private val _isCapturing = MutableStateFlow(false)
+    val isCapturing: StateFlow<Boolean> = _isCapturing.asStateFlow()
 
     private val _capturedImageUri = MutableStateFlow<Uri?>(null)
     val capturedImageUri: StateFlow<Uri?> = _capturedImageUri.asStateFlow()
@@ -43,10 +46,11 @@ class CameraViewModel @Inject constructor(
         LocationServices.getFusedLocationProviderClient(context)
 
     fun takePhoto(
-        cameraController: LifecycleCameraController,
-        outputDirectory: File,
-        executor: Executor
+        cameraController: LifecycleCameraController
     ) {
+        _isCapturing.value = true // Indicate capture has started
+        val outputDirectory = context.filesDir
+        val executor = ContextCompat.getMainExecutor(context)
         val photoFile = File(
             outputDirectory,
             SimpleDateFormat(
@@ -63,11 +67,13 @@ class CameraViewModel @Inject constructor(
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     val savedUri = outputFileResults.savedUri ?: Uri.fromFile(photoFile)
                     _capturedImageUri.value = savedUri
-                    fetchCurrentLocation()
+                    fetchCurrentLocation() // This will eventually lead to navigation
+                    _isCapturing.value = false // Indicate capture has finished
                 }
 
                 override fun onError(exception: ImageCaptureException) {
                     // Handle error
+                    _isCapturing.value = false // Indicate capture has finished (even on error)
                 }
             }
         )
