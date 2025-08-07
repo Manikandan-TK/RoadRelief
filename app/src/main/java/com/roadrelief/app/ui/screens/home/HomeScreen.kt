@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,7 +46,7 @@ fun HomeScreen(
 ) {
     val cases by viewModel.cases.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.US) }
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -70,7 +69,7 @@ fun HomeScreen(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     label = { Text("Reports") },
-                    icon = { Icon(Icons.Outlined.Article, contentDescription = "Reports") }
+                    icon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = "Reports") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
