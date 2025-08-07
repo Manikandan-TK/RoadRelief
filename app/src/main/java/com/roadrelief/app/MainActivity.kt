@@ -76,7 +76,7 @@ fun AppNavigation() {
             arguments = listOf(navArgument("caseId") { type = NavType.LongType })
         ) {
             // val caseId = it.arguments?.getLong("caseId")
-            CaseDetailScreen()
+            CaseDetailScreen(onBackClicked = { navController.navigateUp() })
         }
         composable(Screen.Camera.route) {
             CameraScreen(navController = navController)
