@@ -1,5 +1,6 @@
 package com.roadrelief.app.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -120,12 +121,14 @@ fun RoadReliefExtendedFAB(
 @Composable
 fun RoadReliefCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null, // Added onClick parameter
     content: @Composable () -> Unit
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier), // Added clickable modifier
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {

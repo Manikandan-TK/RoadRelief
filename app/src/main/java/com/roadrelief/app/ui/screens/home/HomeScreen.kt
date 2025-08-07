@@ -114,7 +114,8 @@ fun HomeScreen(
                     items(cases) { case ->
                         RoadReliefCard(
                             modifier = Modifier
-                                .padding(vertical = 4.dp)
+                                .padding(vertical = 4.dp),
+                            onClick = { navController.navigate(Screen.CaseDetail.createRoute(case.id)) } // Added onClick navigation
                         ) {
                             ListItem(
                                 headlineContent = { Text("Case ID: ${case.id}") },
