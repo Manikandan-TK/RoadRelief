@@ -59,6 +59,7 @@
 **Task 1-4: Foundation & Setup**
 - All foundational tasks, including dependency setup, permissions handling, navigation graph, and database schema, are complete.
 - Ensured `SharedPreferences` is provided as a Singleton via Hilt for consistent access across the app, resolving initial onboarding flow issues.
+- **Evidence Entity Indexing**: Added an index to `EvidenceEntity` on the `caseId` column (`MIGRATION_3_4`) to optimize queries and resolve KSP warnings.
 
 **Task 5: User Profile Screen & Flexible Onboarding**
 - The user profile screen has been implemented. On first launch, the user is directed here.
@@ -76,19 +77,29 @@
 - The screen includes fields for incident date, responsible authority (dropdown), road condition description, vehicle damage description, and compensation amount.
 - A database migration was successfully added to include the `vehicleDamageDescription` field in the `cases` table.
 - A reminder is displayed on the New Case Screen if the user's profile information is incomplete.
+- **Critical Incident Location Refactor**: Implemented a dedicated incident location capture mechanism in `NewCaseScreen` (latitude/longitude fields and 'Get Location' button). `CaseEntity` now stores `incidentLatitude` and `incidentLongitude` directly. This required `MIGRATION_2_3`. This addresses a critical UX and data integrity flaw.
+- **Navigation Fix**: Corrected navigation call in `NewCaseScreen` to use `Screen.Camera.route` to resolve runtime errors.
 
 **Task 8: Home Screen**
 - The home screen displays a list of all created cases.
-- It features a Bottom App Bar for navigation between "Reports" and "Profile".
+- **UI Update**:
+    - The Bottom App Bar has been removed.
+    - "Profile" and "Submission Guide" are now accessible via `IconButton`s in the `RoadReliefTopAppBar`.
 - A Floating Action Button (FAB) allows users to create a new case.
 
 **Task 9 & 10: Case Detail and PDF Generation**
 - The case detail screen displays all information for a selected case, including evidence photos.
 - The PDF generation service creates a comprehensive PDF report of the case.
 - **Improved PDF Handling**: The PDF is saved to the app's internal cache directory, removing the need for `WRITE_EXTERNAL_STORAGE` permission. A `FileProvider` is used to securely share the generated PDF via a system share sheet.
+- The `AppComponents.kt` file now includes an optional `actions` parameter for `RoadReliefTopAppBar` to support custom actions.
 
 **Task 11: Submission Guidance Screen**
-- The submission guidance screen provides static instructions for submitting the claim and includes a button to open the E-Daakhil portal in an external browser.
+- **UI Revamp**:
+    - The screen now uses a `Scaffold` with a `RoadReliefTopAppBar` that includes a back button for navigation.
+    - Instructions are presented in a more structured and visually appealing manner using a new `GuideStep` composable, which utilizes `Card`s and `Icon`s.
+    - The "Go to E-Daakhil Portal" button has been updated to use `.toUri()` for the intent URI, ensuring correct handling of the web link.
+- The `MainActivity.kt` has been updated so that the `SubmissionGuideScreen` composable now accepts a `navController` parameter for managing navigation.
+
 
 ## 5. Testing Phase
 
@@ -102,11 +113,11 @@
     - Reminder appears on New Case screen if profile is skipped.
   - Verify "Skip for Now" button is hidden after first launch.
   - Verify back button functionality on Profile screen.
-- **[ ] Test New Case and Camera Flow**:
+- **[x] Test New Case and Camera Flow**:
   - Ensure that the camera captures photos and location data correctly.
   - Verify that the captured evidence is correctly added to a new case.
   - Test the saving of a new case to the database.
+  - **Verify dedicated incident location capture.**
 - **[ ] Test PDF Generation and Sharing**:
   - Verify that the PDF is generated correctly with all the required information.
   - Test the sharing of the PDF to other apps.
-```

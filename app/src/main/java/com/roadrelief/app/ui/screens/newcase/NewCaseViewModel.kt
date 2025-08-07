@@ -22,7 +22,7 @@ import javax.inject.Inject
 class NewCaseViewModel @Inject constructor(
     private val caseDao: CaseDao,
     private val evidenceDao: EvidenceDao,
-    private val userDao: UserDao // Added UserDao
+    private val userDao: UserDao
 ) : ViewModel() {
 
     // User data for placeholders
@@ -63,6 +63,12 @@ class NewCaseViewModel @Inject constructor(
     private val _evidenceList = MutableStateFlow<List<EvidenceEntity>>(emptyList())
     val evidenceList: StateFlow<List<EvidenceEntity>> = _evidenceList.asStateFlow()
 
+    private val _incidentLatitude = MutableStateFlow<Double?>(null)
+    val incidentLatitude: StateFlow<Double?> = _incidentLatitude.asStateFlow()
+
+    private val _incidentLongitude = MutableStateFlow<Double?>(null)
+    val incidentLongitude: StateFlow<Double?> = _incidentLongitude.asStateFlow()
+
     val authorities = listOf("City Council", "State Highway Dept", "Other")
 
     fun onIncidentDateChange(date: Long) {
@@ -85,13 +91,18 @@ class NewCaseViewModel @Inject constructor(
         _compensation.value = comp
     }
 
+    fun onIncidentLocationChange(latitude: Double?, longitude: Double?) {
+        _incidentLatitude.value = latitude
+        _incidentLongitude.value = longitude
+    }
+
     fun addEvidence(uriString: String, latitude: Double, longitude: Double) {
         val timestamp = System.currentTimeMillis()
         val newEvidence = EvidenceEntity(
             caseId = 0, // Will be updated after case is saved
             photoUri = uriString,
-            latitude = latitude,
-            longitude = longitude,
+            latitude = latitude, // This is the photo's location
+            longitude = longitude, // This is the photo's location
             timestamp = timestamp
         )
         _evidenceList.value = _evidenceList.value + newEvidence
@@ -99,19 +110,15 @@ class NewCaseViewModel @Inject constructor(
 
     fun saveCase() {
         viewModelScope.launch {
-            val currentUserName = user.value?.name ?: ""
-            val currentUserAddress = user.value?.address ?: ""
-            // Potentially use these user details in the case entity if your schema supports it
-            // For now, they are just used as placeholders as per original request.
-
             val case = CaseEntity(
                 incidentDate = _incidentDate.value,
                 authority = _authority.value,
                 description = _roadConditionDescription.value,
                 vehicleDamageDescription = _vehicleDamageDescription.value,
                 compensation = _compensation.value.toDoubleOrNull() ?: 0.0,
-                status = _status.value
-                // Potentially add userName, userAddress etc. here if your CaseEntity is updated
+                status = _status.value,
+                incidentLatitude = _incidentLatitude.value,
+                incidentLongitude = _incidentLongitude.value
             )
             val caseId = caseDao.insertCase(case)
 
@@ -124,6 +131,8 @@ class NewCaseViewModel @Inject constructor(
             _roadConditionDescription.value = ""
             _vehicleDamageDescription.value = ""
             _compensation.value = ""
+            _incidentLatitude.value = null
+            _incidentLongitude.value = null
             _evidenceList.value = emptyList()
         }
     }

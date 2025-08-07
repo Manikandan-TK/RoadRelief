@@ -2,6 +2,7 @@ package com.roadrelief.app.data.database.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,7 +14,8 @@ import androidx.room.PrimaryKey
             childColumns = ["caseId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["caseId"])]
 )
 data class EvidenceEntity(
     @PrimaryKey(autoGenerate = true)
