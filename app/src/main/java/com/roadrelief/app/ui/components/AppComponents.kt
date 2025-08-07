@@ -2,6 +2,7 @@ package com.roadrelief.app.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,7 +36,8 @@ fun RoadReliefTopAppBar(
     title: String,
     canNavigateBack: Boolean,
     onNavigateUp: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
         title = { Text(text = title, style = MaterialTheme.typography.titleLarge) },
@@ -55,7 +57,8 @@ fun RoadReliefTopAppBar(
                     )
                 }
             }
-        }
+        },
+        actions = actions
     )
 }
 

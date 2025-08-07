@@ -1,53 +1,120 @@
 package com.roadrelief.app.ui.screens.submission
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.navigation.NavController
 import com.roadrelief.app.ui.components.RoadReliefButton
+import com.roadrelief.app.ui.components.RoadReliefTopAppBar
 
 @Composable
-fun SubmissionGuideScreen() {
+fun SubmissionGuideScreen(navController: NavController) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState)
-    ) {
-        Text(text = "Submission Guide")
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Here are the steps to submit your claim:")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "1. Gather all necessary documents, including your generated PDF report, photos, and any other supporting evidence.")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "2. Visit the official E-Daakhil portal to file your complaint. Make sure you have a stable internet connection.")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "3. Fill out the online form accurately. Attach all your documents as required.")
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "4. Keep a record of your complaint number for future reference.")
-        Spacer(modifier = Modifier.height(16.dp))
+    Scaffold(
+        topBar = {
+            RoadReliefTopAppBar(
+                title = "Submission Guide",
+                canNavigateBack = true,
+                onNavigateUp = { navController.popBackStack() }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(scrollState)
+        ) {
+            Text(
+                text = "Follow these steps to file your claim:",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-        RoadReliefButton(
-            onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://edaakhil.nic.in/"))
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            text = "Go to E-Daakhil Portal"
-        )
+            GuideStep(
+                icon = Icons.AutoMirrored.Outlined.ListAlt,
+                title = "1. Gather Documents",
+                description = "Collect your generated PDF report, photos, and other supporting evidence."
+            )
+            GuideStep(
+                icon = Icons.Filled.Create,
+                title = "2. Visit the E-Daakhil Portal",
+                description = "Visit the official portal to file your complaint. A stable internet connection is recommended."
+            )
+            GuideStep(
+                icon = Icons.Filled.Info,
+                title = "3. Fill Out the Online Form",
+                description = "Accurately fill out the online form and attach all required documents."
+            )
+            GuideStep(
+                icon = Icons.Filled.CheckCircle,
+                title = "4. Keep Your Complaint Number",
+                description = "Save your complaint number for future reference and tracking."
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            RoadReliefButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, "https://edaakhil.nic.in/".toUri())
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                text = "Go to E-Daakhil Portal"
+            )
+        }
+    }
+}
+
+@Composable
+private fun GuideStep(icon: ImageVector, title: String, description: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Column(modifier = Modifier.padding(start = 16.dp)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                Text(text = description, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 }

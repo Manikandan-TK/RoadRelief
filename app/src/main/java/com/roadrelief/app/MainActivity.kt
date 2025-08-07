@@ -81,7 +81,7 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
             CameraScreen(navController = navController)
         }
         composable(Screen.SubmissionGuide.route) {
-            SubmissionGuideScreen()
+            SubmissionGuideScreen(navController = navController)
         }
     }
 }
