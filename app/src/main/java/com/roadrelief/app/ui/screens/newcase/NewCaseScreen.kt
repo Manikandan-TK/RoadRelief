@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,6 +73,7 @@ fun NewCaseScreen(
     val vehicleDamageDescription by viewModel.vehicleDamageDescription.collectAsState()
     val compensation by viewModel.compensation.collectAsState()
     val evidenceList by viewModel.evidenceList.collectAsState()
+    val userNamePlaceholder by viewModel.userNamePlaceholder.collectAsState() // Collect user name placeholder
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -118,7 +122,32 @@ fun NewCaseScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState()) // Added for scrollability
         ) {
+            // Reminder Text if profile is incomplete
+            if (userNamePlaceholder == "[Your Name]") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(4.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = "Info",
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = "Your profile is incomplete. Please fill it out from the Home screen's Profile tab for accurate claim details.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
             Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
                 OutlinedTextField(
                     value = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(incidentDate)),
@@ -141,7 +170,7 @@ fun NewCaseScreen(
             Box {
                 OutlinedTextField(
                     value = authority,
-                    onValueChange = { },
+                    onValueChange = { }, // Not directly editable
                     label = { Text("Responsible Authority") },
                     readOnly = true,
                     trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null) },
@@ -252,14 +281,16 @@ fun NewCaseScreen(
             }
 
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f, fill = false)) // Adjusted weight for scrollable content
 
             RoadReliefButton(
                 onClick = {
                     viewModel.saveCase()
-                    navController.popBackStack()
+                    navController.popBackStack() // Navigate back after saving
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp), // Added padding for better spacing at the bottom
                 text = "Save Claim"
             )
         }

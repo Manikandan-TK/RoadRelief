@@ -4,12 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roadrelief.app.data.database.dao.CaseDao
 import com.roadrelief.app.data.database.dao.EvidenceDao
+import com.roadrelief.app.data.database.dao.UserDao
 import com.roadrelief.app.data.database.entity.CaseEntity
 import com.roadrelief.app.data.database.entity.EvidenceEntity
+import com.roadrelief.app.data.database.entity.UserEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,7 +22,25 @@ import javax.inject.Inject
 class NewCaseViewModel @Inject constructor(
     private val caseDao: CaseDao,
     private val evidenceDao: EvidenceDao,
+    private val userDao: UserDao // Added UserDao
 ) : ViewModel() {
+
+    // User data for placeholders
+    private val user: StateFlow<UserEntity?> = userDao.getUser()
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    val userNamePlaceholder: StateFlow<String> = user.map {
+        if (it?.name.isNullOrEmpty()) "[Your Name]" else it!!.name
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "[Your Name]")
+
+    val userAddressPlaceholder: StateFlow<String> = user.map {
+        if (it?.address.isNullOrEmpty()) "[Your Address]" else it!!.address
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "[Your Address]")
+
+    val userVehicleNumberPlaceholder: StateFlow<String> = user.map {
+        if (it?.vehicleNumber.isNullOrEmpty()) "[Your Vehicle Number]" else it!!.vehicleNumber
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "[Your Vehicle Number]")
+
 
     private val _incidentDate = MutableStateFlow(System.currentTimeMillis())
     val incidentDate: StateFlow<Long> = _incidentDate.asStateFlow()
@@ -76,6 +99,11 @@ class NewCaseViewModel @Inject constructor(
 
     fun saveCase() {
         viewModelScope.launch {
+            val currentUserName = user.value?.name ?: ""
+            val currentUserAddress = user.value?.address ?: ""
+            // Potentially use these user details in the case entity if your schema supports it
+            // For now, they are just used as placeholders as per original request.
+
             val case = CaseEntity(
                 incidentDate = _incidentDate.value,
                 authority = _authority.value,
@@ -83,6 +111,7 @@ class NewCaseViewModel @Inject constructor(
                 vehicleDamageDescription = _vehicleDamageDescription.value,
                 compensation = _compensation.value.toDoubleOrNull() ?: 0.0,
                 status = _status.value
+                // Potentially add userName, userAddress etc. here if your CaseEntity is updated
             )
             val caseId = caseDao.insertCase(case)
 

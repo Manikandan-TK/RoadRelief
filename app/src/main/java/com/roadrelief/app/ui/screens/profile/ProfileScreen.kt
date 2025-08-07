@@ -11,10 +11,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,12 +30,11 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    sharedPreferences: SharedPreferences, // Re-added this parameter
+    sharedPreferences: SharedPreferences, // Still needed for initial check by NavHost, but UI decisions use ViewModel state
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Handle navigation event
     LaunchedEffect(Unit) {
         viewModel.navigateToHome.collectLatest {
             navController.navigate(Screen.Home.route) {
@@ -46,7 +47,8 @@ fun ProfileScreen(
         topBar = {
             RoadReliefTopAppBar(
                 title = "Profile",
-                canNavigateBack = navController.previousBackStackEntry != null,
+                // Show back arrow if it's NOT the initial setup OR if there's a backstack
+                canNavigateBack = !uiState.isInitialSetup || navController.previousBackStackEntry != null,
                 onNavigateUp = { navController.navigateUp() }
             )
         }
@@ -54,8 +56,8 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Apply padding from Scaffold
-                .padding(16.dp) // Keep original content padding
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
             OutlinedTextField(
                 value = uiState.name,
@@ -83,6 +85,18 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 text = "Save Profile"
             )
+
+            // Show "Skip for Now" button only if it's the initial setup phase
+            if (uiState.isInitialSetup) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = { viewModel.skipProfile() },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Skip for Now")
+                }
+            }
         }
     }
 }
+
