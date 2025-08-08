@@ -1,5 +1,7 @@
 package com.roadrelief.app.ui.nav
 
+import android.net.Uri
+
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Profile : Screen("profile")
@@ -9,4 +11,7 @@ sealed class Screen(val route: String) {
     }
     data object Camera : Screen("camera")
     data object SubmissionGuide : Screen("submission_guide")
+    data object FullScreenImage : Screen("full_screen_image/{imageUri}") {
+        fun createRoute(imageUri: String) = "full_screen_image/${Uri.encode(imageUri)}"
+    }
 }

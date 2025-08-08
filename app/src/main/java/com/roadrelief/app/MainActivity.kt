@@ -19,6 +19,7 @@ import com.roadrelief.app.AppConstants.KEY_FIRST_LAUNCH_COMPLETE
 import com.roadrelief.app.ui.nav.Screen
 import com.roadrelief.app.ui.screens.camera.CameraScreen
 import com.roadrelief.app.ui.screens.casedetail.CaseDetailScreen
+import com.roadrelief.app.ui.screens.fullscreenimage.FullScreenImageScreen
 import com.roadrelief.app.ui.screens.home.HomeScreen
 import com.roadrelief.app.ui.screens.newcase.NewCaseScreen
 import com.roadrelief.app.ui.screens.profile.ProfileScreen
@@ -65,7 +66,6 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
             HomeScreen(navController = navController)
         }
         composable(Screen.Profile.route) {
-            // Pass navController and the Hilt-provided SharedPreferences to ProfileScreen
             ProfileScreen(navController = navController, sharedPreferences = sharedPreferences)
         }
         composable(Screen.NewCase.route) {
@@ -75,13 +75,23 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
             route = Screen.CaseDetail.route,
             arguments = listOf(navArgument("caseId") { type = NavType.LongType })
         ) {
-            CaseDetailScreen(onBackClicked = { navController.navigateUp() })
+            // Pass navController to CaseDetailScreen
+            CaseDetailScreen(navController = navController)
         }
         composable(Screen.Camera.route) {
             CameraScreen(navController = navController)
         }
         composable(Screen.SubmissionGuide.route) {
             SubmissionGuideScreen(navController = navController)
+        }
+        composable(
+            route = Screen.FullScreenImage.route,
+            arguments = listOf(navArgument("imageUri") { type = NavType.StringType })
+        ) { backStackEntry ->
+            FullScreenImageScreen(
+                navController = navController,
+                imageUriString = backStackEntry.arguments?.getString("imageUri")
+            )
         }
     }
 }

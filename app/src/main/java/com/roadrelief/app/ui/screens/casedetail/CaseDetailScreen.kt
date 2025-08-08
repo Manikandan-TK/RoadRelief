@@ -2,6 +2,7 @@ package com.roadrelief.app.ui.screens.casedetail
 
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,9 +39,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.roadrelief.app.ui.components.RoadReliefButton
 import com.roadrelief.app.ui.components.RoadReliefCard
+import com.roadrelief.app.ui.nav.Screen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,8 +51,9 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaseDetailScreen(
-    viewModel: CaseDetailViewModel = hiltViewModel(),
-    onBackClicked: () -> Unit
+    navController: NavController, // Added NavController
+    viewModel: CaseDetailViewModel = hiltViewModel()
+    // Removed onBackClicked, will use navController
 ) {
     val caseWithEvidence by viewModel.caseWithEvidence.collectAsState()
     val shareIntent by viewModel.shareIntent.collectAsState()
@@ -69,7 +73,7 @@ fun CaseDetailScreen(
             CenterAlignedTopAppBar(
                 title = { Text("Claim Details") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClicked) {
+                    IconButton(onClick = { navController.popBackStack() }) { // Use NavController
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -183,6 +187,7 @@ fun CaseDetailScreen(
                                 contentDescription = "Evidence Photo",
                                 modifier = Modifier
                                     .size(100.dp)
+                                    .clickable { navController.navigate(Screen.FullScreenImage.createRoute(evidence.photoUri)) }
                             )
                         }
                     }

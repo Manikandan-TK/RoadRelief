@@ -77,14 +77,15 @@ The RoadRelief app assists users in filing claims for road-related damages by gu
 
 ### 5. View Case Details & Generate PDF
 
-**Purpose**: To review all case information and generate a shareable PDF report.
+**Purpose**: To review all case information, view photos full-screen, and generate a shareable PDF report.
 
 **Steps**:
 1.  From the Home Screen, the user taps on a case to open the **Case Detail Screen**.
 2.  This screen displays all entered information: the main **incident location (latitude/longitude)**, authority, dates, descriptions, compensation, and evidence photos (with their individual metadata, including photo-specific timestamps and locations, if needed).
-3.  The user clicks the **"Generate PDF Report"** button at the bottom of the screen.
-4.  The app generates a PDF file containing all the case details (including the primary incident location) and photos.
-5.  A system **share sheet** appears, allowing the user to send the PDF to another app (e.g., Gmail, WhatsApp, Google Drive).
+3.  **View Full-Screen Photo**: The user can tap on any evidence photo thumbnail to view it in a **Full-Screen Image Screen**. The user can tap the back button or anywhere on the image to return to the Case Detail Screen.
+4.  The user clicks the **"Generate PDF Report"** button at the bottom of the screen.
+5.  The app generates a PDF file containing all the case details (including the primary incident location) and photos.
+6.  A system **share sheet** appears, allowing the user to send the PDF to another app (e.g., Gmail, WhatsApp, Google Drive).
 
 **Details**:
 *   The PDF is generated and stored in the app's private cache directory.
@@ -107,6 +108,5 @@ The RoadRelief app assists users in filing claims for road-related damages by gu
 
 **Features**:
 *   **View Cases**: The Home Screen lists all cases with their ID, status, and date.
-*   **View Details**: Tapping a case opens the detailed view.
+*   **View Details**: Tapping a case opens the detailed view, allowing users to see all case information and view evidence photos full-screen.
 *   **Editing/Deleting**: *Currently not implemented in the UI.* The user can only add new cases and view existing ones.
-

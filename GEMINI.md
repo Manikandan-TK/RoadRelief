@@ -51,6 +51,7 @@
 
 ### Phase 3: Finalization & Polish
 - [x] **Task 9: Case Detail Screen**
+  - [x] **Sub-task: Full-Screen Image Viewer**: Implemented a full-screen image viewer accessible from the Case Detail screen.
 - [x] **Task 10: PDF Generation Service**
 - [x] **Task 11: Submission Guidance Screen**
 
@@ -89,6 +90,7 @@
 
 **Task 9 & 10: Case Detail and PDF Generation**
 - The case detail screen displays all information for a selected case, including evidence photos.
+- **Full-Screen Image Viewer**: Implemented `FullScreenImageScreen.kt` to display evidence photos full-screen. Updated `CaseDetailScreen.kt` to navigate to this screen when an image is tapped. Added the new screen to `Screen.kt` and `MainActivity.kt` (NavHost).
 - The PDF generation service creates a comprehensive PDF report of the case.
 - **Improved PDF Handling**: The PDF is saved to the app's internal cache directory, removing the need for `WRITE_EXTERNAL_STORAGE` permission. A `FileProvider` is used to securely share the generated PDF via a system share sheet.
 - The `AppComponents.kt` file now includes an optional `actions` parameter for `RoadReliefTopAppBar` to support custom actions.
@@ -118,6 +120,9 @@
   - Verify that the captured evidence is correctly added to a new case.
   - Test the saving of a new case to the database.
   - **Verify dedicated incident location capture.**
+- **[x] Test Full-Screen Image Viewing**: 
+  - Verify that tapping an image in Case Detail Screen opens it in full-screen.
+  - Test navigation back from the full-screen view.
 - **[ ] Test PDF Generation and Sharing**:
   - Verify that the PDF is generated correctly with all the required information.
   - Test the sharing of the PDF to other apps.
