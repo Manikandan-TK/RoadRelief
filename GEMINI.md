@@ -59,18 +59,19 @@
 
 **Task 1-4: Foundation & Setup**
 - All foundational tasks, including dependency setup, permissions handling, navigation graph, and database schema, are complete.
-- Ensured `SharedPreferences` is provided as a Singleton via Hilt for consistent access across the app, resolving initial onboarding flow issues.
+- Ensured `SharedPreferences` is provided as a Singleton via Hilt for consistent access across the app. `MainActivity` uses it for determining initial navigation, and ViewModels (like `ProfileViewModel`) have it injected for screen-specific logic.
 - **Evidence Entity Indexing**: Added an index to `EvidenceEntity` on the `caseId` column (`MIGRATION_3_4`) to optimize queries and resolve KSP warnings.
 
 **Task 5: User Profile Screen & Flexible Onboarding**
 - The user profile screen has been implemented. On first launch, the user is directed here.
-- It allows users to save their name, address, and vehicle number, which is persisted in the local Room database.
+- It allows users to save their name, address, and vehicle number. All interactions with `SharedPreferences` (e.g., saving data, updating `firstLaunchComplete` flag) are handled by the `ProfileViewModel`, which has `SharedPreferences` injected by Hilt.
 - **Flexible Onboarding**:
     - Includes a "Skip for Now" button. If the user skips, they are navigated to the Home Screen.
-    - The `firstLaunchComplete` flag in SharedPreferences is set to true regardless of whether the profile is filled or skipped, preventing the Profile screen from appearing mandatorily on every subsequent launch.
+    - The `firstLaunchComplete` flag in SharedPreferences is set to true by the `ProfileViewModel` regardless of whether the profile is filled or skipped, preventing the Profile screen from appearing mandatorily on every subsequent launch.
     - If the profile is skipped or incomplete, the `NewCaseScreen` will display a reminder (e.g., using placeholder text like "[Your Name]" in a prompt) to encourage the user to complete their profile later via the Home screen's Profile tab.
     - The "Skip for Now" button is only visible during the initial, mandatory profile setup.
     - A back button is correctly shown on the Profile screen if accessed after the initial setup (e.g., from the Home screen).
+- **Code Refinement**: Removed redundant `SharedPreferences` parameter from `ProfileScreen` composable; it now solely relies on `ProfileViewModel` for SharedPreferences interactions, aligning with MVVM best practices.
 
 **Task 6 & 7: CameraX and New Case Screen**
 - The CameraX screen is fully functional, capturing geotagged and timestamped photos.
@@ -106,12 +107,12 @@
 ## 5. Testing Phase
 
 - **[x] Test Profile Setup & Onboarding**:
-  - Verify that user data is correctly saved and retrieved.
+  - Verify that user data is correctly saved and retrieved (ViewModel handles SharedPreferences).
   - Test edge cases, such as empty fields and invalid input.
   - Verify the "Skip for Now" functionality:
     - User is navigated to Home.
-    - `firstLaunchComplete` flag is set.
-    - App opens to Home on subsequent launches.
+    - `firstLaunchComplete` flag is set by ViewModel.
+    - App opens to Home on subsequent launches (MainActivity checks SharedPreferences).
     - Reminder appears on New Case screen if profile is skipped.
   - Verify "Skip for Now" button is hidden after first launch.
   - Verify back button functionality on Profile screen.

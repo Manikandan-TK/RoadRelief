@@ -66,7 +66,7 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
             HomeScreen(navController = navController)
         }
         composable(Screen.Profile.route) {
-            ProfileScreen(navController = navController, sharedPreferences = sharedPreferences)
+            ProfileScreen(navController = navController)
         }
         composable(Screen.NewCase.route) {
             NewCaseScreen(navController = navController)

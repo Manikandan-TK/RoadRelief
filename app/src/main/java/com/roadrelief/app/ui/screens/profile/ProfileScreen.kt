@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    sharedPreferences: SharedPreferences, // Still needed for initial check by NavHost, but UI decisions use ViewModel state
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,4 +98,3 @@ fun ProfileScreen(
         }
     }
 }
-
