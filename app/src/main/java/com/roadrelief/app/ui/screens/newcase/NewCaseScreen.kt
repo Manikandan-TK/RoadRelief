@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,16 +34,24 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -56,15 +65,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
 import com.roadrelief.app.ui.components.RoadReliefButton
 import com.roadrelief.app.ui.nav.Screen
 import java.text.SimpleDateFormat
@@ -72,7 +79,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-@SuppressLint("MissingPermission") // Permissions handled by launcher
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewCaseScreen(
@@ -80,48 +87,33 @@ fun NewCaseScreen(
     viewModel: NewCaseViewModel = hiltViewModel()
 ) {
     val incidentDate by viewModel.incidentDate.collectAsState()
-    val authority by viewModel.authority.collectAsState()
     val roadConditionDescription by viewModel.roadConditionDescription.collectAsState()
     val vehicleDamageDescription by viewModel.vehicleDamageDescription.collectAsState()
     val compensation by viewModel.compensation.collectAsState()
     val evidenceList by viewModel.evidenceList.collectAsState()
     val userNamePlaceholder by viewModel.userNamePlaceholder.collectAsState()
+    val isDetectingLocation by viewModel.isDetectingLocation.collectAsState()
+    val selectedAuthority by viewModel.selectedAuthority.collectAsState()
+    val authorityOptions by viewModel.authorityOptions.collectAsState()
+    val customAuthority by viewModel.customAuthority.collectAsState()
     val incidentLatitude by viewModel.incidentLatitude.collectAsState()
     val incidentLongitude by viewModel.incidentLongitude.collectAsState()
-
-    var isFetchingLocation by remember { mutableStateOf(false) }
-
+    val incidentAddress by viewModel.incidentAddress.collectAsState()
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
-    // Initialize FusedLocationProviderClient
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Location Permission Launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
-            isFetchingLocation = true
-            fusedLocationClient.getCurrentLocation(
-                Priority.PRIORITY_HIGH_ACCURACY,
-                CancellationTokenSource().token // Used to cancel the request if needed
-            ).addOnSuccessListener { location ->
-                if (location != null) {
-                    viewModel.onIncidentLocationChange(location.latitude, location.longitude)
-                }
-                isFetchingLocation = false
-            }.addOnFailureListener {
-                isFetchingLocation = false
-                // TODO: Show a Toast or Snackbar message to the user about the failure
-            }
+            viewModel.onGetLocationClicked()
         } else {
-            // TODO: Handle permission denial (e.g., show a Snackbar or guide user to settings)
+            viewModel.onLocationPermissionDenied()
         }
     }
-
 
     val datePickerDialog = DatePickerDialog(
         context,
@@ -138,8 +130,8 @@ fun NewCaseScreen(
     LaunchedEffect(savedStateHandle) {
         savedStateHandle?.let { handle ->
             val photoUri = handle.get<String>("photoUri")
-            val photoLatitude = handle.get<Double>("latitude") // Renamed to avoid confusion
-            val photoLongitude = handle.get<Double>("longitude") // Renamed to avoid confusion
+            val photoLatitude = handle.get<Double>("latitude")
+            val photoLongitude = handle.get<Double>("longitude")
 
             if (photoUri != null && photoLatitude != null && photoLongitude != null) {
                 viewModel.addEvidence(photoUri, photoLatitude, photoLongitude)
@@ -150,7 +142,23 @@ fun NewCaseScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvents.collect { event ->
+            when (event) {
+                is NewCaseViewModel.UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("New Damage Claim") },
@@ -160,15 +168,33 @@ fun NewCaseScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp
+            ) {
+                RoadReliefButton(
+                    onClick = {
+                        viewModel.saveCase()
+                        navController.popBackStack()
+                    },
+                    text = "Save Claim",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             if (userNamePlaceholder == "[Your Name]") {
                 Row(
                     modifier = Modifier
@@ -192,116 +218,130 @@ fun NewCaseScreen(
                 }
             }
 
-            // Incident Date Picker
-            Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
-                OutlinedTextField(
-                    value = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(incidentDate)),
-                    onValueChange = { },
-                    label = { Text("Incident Date") },
-                    readOnly = true,
-                    enabled = false, // Keep it not directly editable, only via picker
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                    trailingIcon = { Icon(Icons.Filled.ArrowDropDown, "Date Picker") }
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Incident Location Section
-            Text("Incident Location", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                OutlinedTextField(
-                    value = if (incidentLatitude != null && incidentLongitude != null) {
-                        String.format(Locale.US, "Lat: %.5f, Lon: %.5f", incidentLatitude, incidentLongitude)
-                    } else {
-                        "Location not set"
-                    },
-                    onValueChange = { /* Location is set via button */ },
-                    label = { Text("Coordinates") },
-                    readOnly = true,
-                    modifier = Modifier.weight(1f),
-                     colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                    enabled = false // Display only
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        locationPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Box(modifier = Modifier.clickable { datePickerDialog.show() }) {
+                        OutlinedTextField(
+                            value = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(incidentDate)),
+                            onValueChange = { },
+                            label = { Text("Incident Date") },
+                            readOnly = true,
+                            enabled = false,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                            trailingIcon = { Icon(Icons.Filled.ArrowDropDown, "Date Picker") }
+                        )
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable(onClick = {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            })
+                            .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.MyLocation, contentDescription = "Location Icon", tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Incident Location", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (incidentLatitude != null && incidentLongitude != null) {
+                                    String.format(Locale.US, "Lat: %.5f, Lon: %.5f", incidentLatitude, incidentLongitude)
+                                } else {
+                                    "Tap to get location"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (incidentLatitude != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            incidentAddress?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                        if (isDetectingLocation) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+                    var authorityExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = authorityExpanded,
+                        onExpandedChange = {
+                            authorityExpanded = !authorityExpanded && (authorityOptions.isNotEmpty() || !isDetectingLocation)
+                        }
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            readOnly = true,
+                            value = selectedAuthority.ifEmpty { if (isDetectingLocation) "Detecting..." else "Select Authority" },
+                            onValueChange = {},
+                            label = { Text("Responsible Authority") },
+                            trailingIcon = {
+                                if (isDetectingLocation && selectedAuthority.isEmpty()) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                } else {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = authorityExpanded)
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(),
                         )
-                    },
-                    enabled = !isFetchingLocation,
-                    contentPadding = ButtonDefaults.ButtonWithIconContentPadding
-                ) {
-                    if (isFetchingLocation) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(Icons.Filled.MyLocation, contentDescription = "Get Current Location")
-                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text("Get Location")
+                        ExposedDropdownMenu(
+                            expanded = authorityExpanded,
+                            onDismissRequest = { authorityExpanded = false },
+                        ) {
+                            authorityOptions.forEach { selectionOption ->
+                                DropdownMenuItem(
+                                    text = { Text(selectionOption) },
+                                    onClick = {
+                                        viewModel.onAuthorityChange(selectionOption)
+                                        authorityExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                                )
+                            }
+                        }
                     }
                 }
             }
-            Text(
-                text = "Tap 'Get Location' to record the incident's location. This should be the actual place where the incident occurred.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-            )
 
-
-            // Responsible Authority Dropdown
-            var authorityExpanded by remember { mutableStateOf(false) }
-            val authorities = listOf("City Council", "State Highway Dept", "National Highways Authority", "Other") // Example list
-            Box {
+            if (selectedAuthority == "Other") {
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = authority,
-                    onValueChange = { }, // Not directly editable
-                    label = { Text("Responsible Authority") },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { authorityExpanded = true },
-                    trailingIcon = { Icon(Icons.Filled.ArrowDropDown, "Select Authority") }
-                )
-                DropdownMenu(
-                    expanded = authorityExpanded,
-                    onDismissRequest = { authorityExpanded = false },
+                    value = customAuthority,
+                    onValueChange = viewModel::onCustomAuthorityChange,
+                    label = { Text("Please specify the authority") },
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    authorities.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                viewModel.onAuthorityChange(selectionOption)
-                                authorityExpanded = false
-                            }
-                        )
-                    }
-                }
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Road Condition Description
+
             OutlinedTextField(
                 value = roadConditionDescription,
                 onValueChange = viewModel::onRoadConditionDescriptionChange,
@@ -311,7 +351,6 @@ fun NewCaseScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Vehicle Damage Description
             OutlinedTextField(
                 value = vehicleDamageDescription,
                 onValueChange = viewModel::onVehicleDamageDescriptionChange,
@@ -321,7 +360,6 @@ fun NewCaseScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Compensation Amount
             OutlinedTextField(
                 value = compensation,
                 onValueChange = viewModel::onCompensationChange,
@@ -331,7 +369,6 @@ fun NewCaseScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Add Photo Evidence
             Text("Photo Evidence", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Button(
@@ -365,22 +402,10 @@ fun NewCaseScreen(
                             contentDescription = "Evidence Photo",
                             modifier = Modifier.fillMaxSize()
                         )
-                        // You could add a small overlay here with evidence.latitude, evidence.longitude if needed
                     }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Save Claim Button
-            RoadReliefButton(
-                onClick = {
-                    viewModel.saveCase()
-                    navController.popBackStack() // Navigate back after saving
-                },
-                text = "Save Claim",
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp)) // Added some padding at the bottom
         }
     }
 }
