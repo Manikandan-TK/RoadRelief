@@ -83,12 +83,11 @@ class CaseDetailViewModel @Inject constructor(
                     val authority = "${context.packageName}.provider"
                     val contentUri = FileProvider.getUriForFile(context, authority, pdfUri.toFile())
 
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/pdf"
-                        putExtra(Intent.EXTRA_STREAM, contentUri)
+                    val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(contentUri, "application/pdf")
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    val chooserIntent = Intent.createChooser(shareIntent, "Share PDF Report")
+                    val chooserIntent = Intent.createChooser(viewIntent, "Open PDF Report")
                     _shareIntent.value = chooserIntent
                     _pdfGenerationState.value = PdfGenerationState.Idle
                 } catch (e: PdfGenerationException) {

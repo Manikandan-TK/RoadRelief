@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Build
@@ -43,7 +42,6 @@ class PdfGenerator @Inject constructor(
     private val imageGridWidth = (contentWidth - margin) / 2
 
     // --- Typography Constants ---
-    private val titleSize = 20f
     private val headingSize = 14f
     private val subheadingSize = 12f
     private val bodySize = 10f
@@ -58,31 +56,31 @@ class PdfGenerator @Inject constructor(
     // --- Paint Objects ---
     private val headingPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = headingSize
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         color = Color.BLACK
     }
 
     private val subheadingPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = subheadingSize
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         color = Color.DKGRAY
     }
 
     private val bodyPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = bodySize
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
         color = Color.DKGRAY
     }
 
     private val bodyBoldPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = bodySize
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
         color = Color.BLACK
     }
 
     private val metaPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = metaSize
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.ITALIC)
         color = Color.GRAY
     }
 
@@ -102,8 +100,8 @@ class PdfGenerator @Inject constructor(
         yPos = drawHeader()
         yPos = drawRecipientInfo(case, yPos)
         yPos = drawSubject(case, yPos)
-        yPos = drawSalutation(user, yPos)
-        yPos = drawIntroduction(case, yPos)
+        yPos = drawSalutation(yPos)
+        yPos = drawIntroduction(yPos)
         yPos = drawSectionTitle("Incident Details", yPos)
         yPos = drawIncidentDetails(case, yPos)
         yPos = drawSectionTitle("Description of Damages", yPos)
@@ -134,7 +132,7 @@ class PdfGenerator @Inject constructor(
 
         try {
             document.writeTo(FileOutputStream(file))
-            return Uri.fromFile(file)
+            return file.toUri()
         } catch (e: IOException) {
             throw PdfGenerationException("Failed to save the PDF file.", e)
         } finally {
@@ -148,7 +146,8 @@ class PdfGenerator @Inject constructor(
             drawPageNumber()
             document.finishPage(it)
         }
-        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, document.pages.size + 1).create()
+        val pageNumber = document.pages.size + 1
+        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
         currentPage = document.startPage(pageInfo)
         yPos = margin
     }
@@ -183,36 +182,35 @@ class PdfGenerator @Inject constructor(
     }
 
     private fun drawSubject(case: CaseEntity, y: Float): Float {
-        var yPos = y
         val subjectText =
-            "Subject: Notice of Claim for Damages due to Poor Road Conditions (Case ID: RR-${case.id})"
+            "Notice of Claim for Damages due to Poor Road Conditions (Case ID: RR-${case.id})"
         checkPageHeight(50f)
-        currentPage!!.canvas.drawText("Subject:", margin, yPos, bodyBoldPaint)
-        yPos = drawWrappedText(
+        currentPage!!.canvas.drawText("Subject:", margin, y, bodyBoldPaint)
+        val subjectXOffset = margin + bodyBoldPaint.measureText("Subject:  ")
+        val subjectYPos = drawWrappedText(
             subjectText,
             bodyPaint,
-            yPos,
-            x = margin + bodyBoldPaint.measureText("Subject:  ")
+            y,
+            x = subjectXOffset,
+            width = (pageWidth - subjectXOffset - margin).toInt()
         )
-        return yPos + sectionSpacing
+        return subjectYPos + sectionSpacing
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun drawSalutation(user: UserEntity?, y: Float): Float {
+    private fun drawSalutation(y: Float): Float {
         val salutation = "Dear Sir/Madam,"
         checkPageHeight(30f)
-        currentPage!!.canvas.drawText(salutation, margin, y, bodyPaint)
+        currentPage!!.canvas.drawText(salutation, margin, y, bodyBoldPaint)
         return y + bodyPaint.textSize * lineSpacing + paraSpacing
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun drawIntroduction(case: CaseEntity, y: Float): Float {
+    private fun drawIntroduction(y: Float): Float {
         val intro =
             "I, the undersigned, am writing to formally notify you of damages sustained to my vehicle due to the hazardous condition of a road under your jurisdiction. This notice serves as a formal claim for compensation as per the details provided below."
         val layout = createStaticLayout(intro, bodyPaint)
         checkPageHeight(layout.height.toFloat() + paraSpacing)
-        yPos = drawWrappedText(intro, bodyPaint, y)
-        return yPos + paraSpacing
+        val yPos = drawWrappedText(intro, bodyPaint, y)
+        return yPos + sectionSpacing
     }
 
 
@@ -319,7 +317,7 @@ class PdfGenerator @Inject constructor(
             "I request that you investigate this matter and process this claim for compensation at the earliest. I have attached photographic evidence of the road condition and the resulting damages for your reference. Please contact me at your earliest convenience to discuss this matter further."
         val layout = createStaticLayout(text, bodyPaint)
         checkPageHeight(layout.height.toFloat() + sectionSpacing)
-        yPos = drawWrappedText(text, bodyPaint, y)
+        val yPos = drawWrappedText(text, bodyPaint, y)
         return yPos + sectionSpacing
     }
 
@@ -385,24 +383,21 @@ class PdfGenerator @Inject constructor(
 
 
     private fun createStaticLayout(text: String, paint: TextPaint, width: Int = contentWidth.toInt()): StaticLayout {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+        return StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setLineSpacing(0f, lineSpacing)
                 .setIncludePad(false)
                 .build()
-        } else {
-            @Suppress("DEPRECATION")
-            StaticLayout(text, paint, width, Layout.Alignment.ALIGN_NORMAL, lineSpacing, 0f, false)
-        }
     }
 
     private fun drawPageNumber() {
-        val pageNum = document.pages.size
-        val text = "Page $pageNum"
-        val x = pageWidth - margin - metaPaint.measureText(text)
-        val y = pageHeight - margin / 2
-        currentPage!!.canvas.drawText(text, x, y, metaPaint)
+        currentPage?.let {
+            val pageNum = it.info.pageNumber
+            val text = "Page $pageNum"
+            val x = pageWidth - margin - metaPaint.measureText(text)
+            val y = pageHeight - margin / 2
+            it.canvas.drawText(text, x, y, metaPaint)
+        }
     }
 
     // --- Bitmap & Formatting Utilities ---
@@ -428,6 +423,6 @@ class PdfGenerator @Inject constructor(
     }
 
     private fun formatDate(timestamp: Long, format: String = "dd MMMM yyyy"): String {
-        return SimpleDateFormat(format, Locale.getDefault()).format(Date(timestamp))
+        return SimpleDateFormat(format, Locale.US).format(Date(timestamp))
     }
 }
