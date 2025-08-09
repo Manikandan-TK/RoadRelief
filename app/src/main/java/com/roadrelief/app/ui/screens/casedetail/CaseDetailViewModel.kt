@@ -9,8 +9,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roadrelief.app.data.database.dao.CaseDao
 import com.roadrelief.app.data.database.dao.EvidenceDao
+import com.roadrelief.app.data.database.dao.UserDao
 import com.roadrelief.app.data.database.entity.CaseEntity
 import com.roadrelief.app.data.database.entity.EvidenceEntity
+import com.roadrelief.app.util.PdfGenerationException
 import com.roadrelief.app.util.PdfGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,9 +21,17 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+// Represents the different states of the PDF generation process for the UI
+sealed interface PdfGenerationState {
+    object Idle : PdfGenerationState
+    object Loading : PdfGenerationState
+    data class Error(val message: String) : PdfGenerationState
+}
 
 @HiltViewModel
 class CaseDetailViewModel @Inject constructor(
@@ -29,6 +39,7 @@ class CaseDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val caseDao: CaseDao,
     private val evidenceDao: EvidenceDao,
+    private val userDao: UserDao,
     private val pdfGenerator: PdfGenerator
 ) : ViewModel() {
 
@@ -43,6 +54,9 @@ class CaseDetailViewModel @Inject constructor(
 
     private val _shareIntent = MutableStateFlow<Intent?>(null)
     val shareIntent: StateFlow<Intent?> = _shareIntent.asStateFlow()
+
+    private val _pdfGenerationState = MutableStateFlow<PdfGenerationState>(PdfGenerationState.Idle)
+    val pdfGenerationState: StateFlow<PdfGenerationState> = _pdfGenerationState.asStateFlow()
 
     init {
         if (caseId != -1L) {
@@ -61,11 +75,13 @@ class CaseDetailViewModel @Inject constructor(
 
     fun generatePdfReport() {
         viewModelScope.launch {
+            _pdfGenerationState.value = PdfGenerationState.Loading
+            val user = userDao.getUser().first()
             _case.value?.let { case ->
-                val pdfUri = pdfGenerator.generatePdfReport(case, _evidence.value)
-                pdfUri?.let { uri ->
+                try {
+                    val pdfUri = pdfGenerator.generatePdfReport(user, case, _evidence.value)
                     val authority = "${context.packageName}.provider"
-                    val contentUri = FileProvider.getUriForFile(context, authority, uri.toFile())
+                    val contentUri = FileProvider.getUriForFile(context, authority, pdfUri.toFile())
 
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
@@ -74,12 +90,24 @@ class CaseDetailViewModel @Inject constructor(
                     }
                     val chooserIntent = Intent.createChooser(shareIntent, "Share PDF Report")
                     _shareIntent.value = chooserIntent
+                    _pdfGenerationState.value = PdfGenerationState.Idle
+                } catch (e: PdfGenerationException) {
+                    _pdfGenerationState.value = PdfGenerationState.Error("Failed to generate PDF: ${e.message}")
+                } catch (e: Exception) {
+                    // Catch any other unexpected errors
+                    _pdfGenerationState.value = PdfGenerationState.Error("An unexpected error occurred.")
                 }
+            } ?: run {
+                _pdfGenerationState.value = PdfGenerationState.Error("Case details not available.")
             }
         }
     }
 
     fun onShareIntentHandled() {
         _shareIntent.value = null
+    }
+
+    fun dismissPdfError() {
+        _pdfGenerationState.value = PdfGenerationState.Idle
     }
 }

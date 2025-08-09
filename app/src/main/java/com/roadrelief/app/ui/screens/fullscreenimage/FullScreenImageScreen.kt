@@ -11,10 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import java.net.URLDecoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,11 +27,18 @@ fun FullScreenImageScreen(
     navController: NavController,
     imageUriString: String?
 ) {
-    val imageUri = imageUriString?.let { Uri.parse(it) }
+    val decodedUri = imageUriString?.let {
+        try {
+            Uri.parse(URLDecoder.decode(it, "UTF-8"))
+        } catch (e: Exception) {
+            // Fallback to parsing without decoding if it fails
+            Uri.parse(it)
+        }
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            androidx.compose.material3.TopAppBar(
                 title = { /* No title needed for full screen image view */ },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -44,7 +49,7 @@ fun FullScreenImageScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Black.copy(alpha = 0.5f) // Semi-transparent app bar
                 )
             )
@@ -58,9 +63,9 @@ fun FullScreenImageScreen(
                 .clickable { navController.popBackStack() }, // Optional: click anywhere on image to go back
             contentAlignment = Alignment.Center
         ) {
-            if (imageUri != null) {
+            if (decodedUri != null) {
                 Image(
-                    painter = rememberAsyncImagePainter(model = imageUri),
+                    painter = rememberAsyncImagePainter(model = decodedUri),
                     contentDescription = "Full Screen Evidence Photo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
